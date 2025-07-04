@@ -1,6 +1,10 @@
 window.onload = function() {
     const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/yrsnrgglhdw3zbn8fn7ew3des7zduk4z';
+    let currentFrontContext; // Variable to hold the current context
 
+    /**
+     * This is the main function that runs when the button is clicked.
+     */
     async function handleSaveToCrm() {
         const saveButton = document.getElementById('save-to-crm-btn');
         const statusText = document.getElementById('status-text');
@@ -10,8 +14,11 @@ window.onload = function() {
             saveButton.textContent = 'Saving...';
             saveButton.disabled = true;
 
-            console.log('Checkpoint 2: Attempting to get conversation...');
-            const conversation = await Front.context.getConversation();
+            // --- THIS IS THE FIX ---
+            // Instead of calling a function, we get the conversation directly
+            // from the context we saved earlier.
+            console.log('Checkpoint 2: Getting conversation from saved context...');
+            const conversation = currentFrontContext.conversation;
 
             console.log('Checkpoint 3: Successfully got conversation object.');
             const contact = conversation.contact;
@@ -46,7 +53,13 @@ window.onload = function() {
         }
     }
 
+    /**
+     * This function initializes the app and saves the current context from Front.
+     */
     function initializeApp(context) {
+        // Save the context every time it updates
+        currentFrontContext = context;
+
         const saveButton = document.getElementById('save-to-crm-btn');
         if (saveButton) {
             saveButton.removeEventListener('click', handleSaveToCrm);
@@ -59,5 +72,6 @@ window.onload = function() {
         }
     }
 
+    // Subscribe to context updates and call our initializeApp function
     Front.contextUpdates.subscribe(initializeApp);
 };
