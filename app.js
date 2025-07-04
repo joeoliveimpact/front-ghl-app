@@ -12,6 +12,7 @@ async function handleSaveToCrm() {
         saveButton.textContent = 'Saving...';
         saveButton.disabled = true;
 
+        // This is the line that was causing the error
         const conversation = await Front.context.getConversation();
         const contact = conversation.contact;
 
@@ -44,9 +45,16 @@ async function handleSaveToCrm() {
     }
 }
 
-// This function sets up the app.
+// This function initializes the app once the Front object is ready.
 function initializeApp(context) {
     const saveButton = document.getElementById('save-to-crm-btn');
+
+    // Add the click listener safely here
+    if (saveButton) {
+        saveButton.addEventListener('click', handleSaveToCrm);
+    }
+
+    // Enable or disable the button based on context
     if (context.type === 'conversation') {
         saveButton.disabled = false;
     } else {
@@ -54,12 +62,5 @@ function initializeApp(context) {
     }
 }
 
-// Add the click listener when the script loads.
-document.addEventListener('DOMContentLoaded', function() {
-    const saveButton = document.getElementById('save-to-crm-btn');
-    if (saveButton) {
-        saveButton.addEventListener('click', handleSaveToCrm);
-    }
-    // Initialize the app with the current context.
-    Front.context.subscribe(initializeApp);
-});
+// The Front SDK will call this function when it is ready.
+Front.context.subscribe(initializeApp);
