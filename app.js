@@ -6,6 +6,10 @@ window.onload = function() {
         const saveButton = document.getElementById('save-to-crm-btn');
         const statusText = document.getElementById('status-text');
 
+        // Get the user-provided data from the textboxes
+        const igHandle = document.getElementById('ig-handle-input').value;
+        const notes = document.getElementById('notes-textarea').value;
+
         try {
             saveButton.textContent = 'Saving...';
             saveButton.disabled = true;
@@ -13,24 +17,33 @@ window.onload = function() {
             const conversation = currentFrontContext.conversation;
             let contactName, contactHandle;
 
+            // Case 1: Standard email/sms contact exists
             if (conversation.contact && conversation.contact.handle) {
                 contactName = conversation.contact.name;
                 contactHandle = conversation.contact.handle;
-            } 
-            else if (conversation.type === 'custom' && conversation.subject && conversation.subject.includes('Instagram Chat with')) {
+            }
+            // Case 2: No standard contact, but user has typed in an Instagram handle
+            else if (igHandle) {
+                // Get the name from the subject line
                 contactName = conversation.subject.replace('Instagram Chat with ', '').trim();
-                // --- THIS IS THE CHANGE ---
-                // Use a safe, universally accepted example domain.
-                contactHandle = `${conversation.id}@instagram.example.com`;
-            } 
+
+                // --- THIS IS THE FIX ---
+                // Clean the handle and create the email from the user's input
+                const cleanedHandle = igHandle.replace('@', ''); // Remove '@' if present
+                contactHandle = `${cleanedHandle}@instagram.example.com`;
+            }
+            // Case 3: No contact info available at all
             else {
-                throw new Error("No usable contact information found on this conversation.");
+                throw new Error("No contact found. For DMs, please enter an Instagram handle.");
             }
 
             const dataToSend = {
                 email: contactHandle,
                 name: contactName,
-                frontLink: conversation.links.self
+                frontLink: conversation.links.self,
+                igHandle: igHandle,
+                notes: notes,
+                tags: conversation.tags.map(tag => tag.name)
             };
 
             const response = await fetch(MAKE_WEBHOOK_URL, {
@@ -39,35 +52,4 @@ window.onload = function() {
                 body: JSON.stringify(dataToSend)
             });
 
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status}`);
-            }
-
-            saveButton.textContent = 'Saved!';
-            statusText.innerHTML = `✅ Successfully saved <strong>${contactName}</strong>.`;
-
-        } catch (error) {
-            console.error('FINAL ERROR in handleSaveToCrm:', error);
-            saveButton.textContent = 'Try Again';
-            saveButton.disabled = false;
-            statusText.textContent = '❌ An error occurred. Check console.';
-        }
-    }
-
-    function initializeApp(context) {
-        currentFrontContext = context;
-        const saveButton = document.getElementById('save-to-crm-btn');
-
-        if (saveButton) {
-            saveButton.removeEventListener('click', handleSaveToCrm);
-            saveButton.addEventListener('click', handleSaveToCrm);
-        }
-        if (context.type === 'singleConversation') {
-            saveButton.disabled = false;
-        } else {
-            saveButton.disabled = true;
-        }
-    }
-
-    Front.contextUpdates.subscribe(initializeApp);
-};
+            if (!
