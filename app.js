@@ -1,7 +1,10 @@
 // Your Make.com Webhook URL
 const MAKE_WEBHOOK_URL = 'https://hook.us1.make.com/yrsnrgglhdw3zbn8fn7ew3des7zduk4z';
 
-// This is the main function that runs when the button is clicked.
+/**
+ * This is the main function that runs when the button is clicked.
+ * It grabs conversation data and sends it to your Make.com webhook.
+ */
 async function handleSaveToCrm() {
     const saveButton = document.getElementById('save-to-crm-btn');
     const statusText = document.getElementById('status-text');
@@ -12,10 +15,10 @@ async function handleSaveToCrm() {
         saveButton.textContent = 'Saving...';
         saveButton.disabled = true;
 
-        // This is the line that was causing the error
+        // This line requires the 'Front' object to be defined.
         const conversation = await Front.context.getConversation();
         const contact = conversation.contact;
-
+        
         const dataToSend = {
             email: contact.handle,
             name: contact.name,
@@ -45,16 +48,19 @@ async function handleSaveToCrm() {
     }
 }
 
-// This function initializes the app once the Front object is ready.
+/**
+ * This function initializes the application.
+ * It's called by the Front SDK only when the 'Front' object is ready.
+ */
 function initializeApp(context) {
     const saveButton = document.getElementById('save-to-crm-btn');
-
-    // Add the click listener safely here
+    
+    // Safely add the click listener here, after the SDK is ready.
     if (saveButton) {
         saveButton.addEventListener('click', handleSaveToCrm);
     }
 
-    // Enable or disable the button based on context
+    // Enable or disable the button based on the current context.
     if (context.type === 'conversation') {
         saveButton.disabled = false;
     } else {
@@ -62,5 +68,6 @@ function initializeApp(context) {
     }
 }
 
-// The Front SDK will call this function when it is ready.
+// This is the entry point.
+// It tells the Front SDK to run our initializeApp function once it's fully loaded.
 Front.context.subscribe(initializeApp);
