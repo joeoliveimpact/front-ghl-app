@@ -6,7 +6,7 @@ window.onload = function() {
         const saveButton = document.getElementById('save-to-crm-btn');
         const statusText = document.getElementById('status-text');
 
-        // Get the user-provided data from the textboxes
+        // Get the new input values
         const igHandle = document.getElementById('ig-handle-input').value;
         const notes = document.getElementById('notes-textarea').value;
 
@@ -15,36 +15,34 @@ window.onload = function() {
             saveButton.disabled = true;
 
             const conversation = currentFrontContext.conversation;
+            const contact = conversation.contact;
+            
+            // Get the conversation tags
+            const tags = conversation.tags.map(tag => tag.name); // Creates a simple array of tag names
+
             let contactName, contactHandle;
 
-            // Case 1: Standard email/sms contact exists
-            if (conversation.contact && conversation.contact.handle) {
-                contactName = conversation.contact.name;
-                contactHandle = conversation.contact.handle;
-            }
-            // Case 2: No standard contact, but user has typed in an Instagram handle
-            else if (igHandle) {
-                // Get the name from the subject line
+            if (contact && contact.handle) {
+                contactName = contact.name;
+                contactHandle = contact.handle;
+            } else if (conversation.type === 'custom' && conversation.subject && conversation.subject.includes('Instagram Chat with')) {
                 contactName = conversation.subject.replace('Instagram Chat with ', '').trim();
-
-                // --- THIS IS THE FIX ---
-                // Clean the handle and create the email from the user's input
-                const cleanedHandle = igHandle.replace('@', ''); // Remove '@' if present
-                contactHandle = `${cleanedHandle}@instagram.example.com`;
-            }
-            // Case 3: No contact info available at all
-            else {
-                throw new Error("No contact found. For DMs, please enter an Instagram handle.");
+                contactHandle = `${conversation.id}@example.com`;
+            } else {
+                throw new Error("No usable contact information found on this conversation.");
             }
 
             const dataToSend = {
                 email: contactHandle,
                 name: contactName,
                 frontLink: conversation.links.self,
+                // Add the new data
                 igHandle: igHandle,
                 notes: notes,
-                tags: conversation.tags.map(tag => tag.name)
+                tags: tags 
             };
+            
+            console.log('Final data being sent to Make:', dataToSend);
 
             const response = await fetch(MAKE_WEBHOOK_URL, {
                 method: 'POST',
@@ -52,4 +50,35 @@ window.onload = function() {
                 body: JSON.stringify(dataToSend)
             });
 
-            if (!
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status}`);
+            }
+            
+            saveButton.textContent = 'Saved!';
+            statusText.innerHTML = `✅ Successfully saved <strong>${contactName}</strong>.`;
+
+        } catch (error) {
+            console.error('FINAL ERROR in handleSaveToCrm:', error);
+            saveButton.textContent = 'Try Again';
+            saveButton.disabled = false;
+            statusText.textContent = '❌ An error occurred. Check console.';
+        }
+    }
+
+    function initializeApp(context) {
+        currentFrontContext = context;
+        const saveButton = document.getElementById('save-to-crm-btn');
+
+        if (saveButton) {
+            saveButton.removeEventListener('click', handleSaveToCrm);
+            saveButton.addEventListener('click', handleSaveToCrm);
+        }
+        if (context.type === 'singleConversation') {
+            saveButton.disabled = false;
+        } else {
+            saveButton.disabled = true;
+        }
+    }
+
+    Front.contextUpdates.subscribe(initializeApp);
+};
