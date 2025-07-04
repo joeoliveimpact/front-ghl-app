@@ -6,43 +6,32 @@ window.onload = function() {
         const saveButton = document.getElementById('save-to-crm-btn');
         const statusText = document.getElementById('status-text');
 
-        // Get the new input values
-        const igHandle = document.getElementById('ig-handle-input').value;
-        const notes = document.getElementById('notes-textarea').value;
-
         try {
             saveButton.textContent = 'Saving...';
             saveButton.disabled = true;
 
             const conversation = currentFrontContext.conversation;
-            const contact = conversation.contact;
-            
-            // Get the conversation tags
-            const tags = conversation.tags.map(tag => tag.name); // Creates a simple array of tag names
-
             let contactName, contactHandle;
 
-            if (contact && contact.handle) {
-                contactName = contact.name;
-                contactHandle = contact.handle;
-            } else if (conversation.type === 'custom' && conversation.subject && conversation.subject.includes('Instagram Chat with')) {
+            if (conversation.contact && conversation.contact.handle) {
+                contactName = conversation.contact.name;
+                contactHandle = conversation.contact.handle;
+            } 
+            else if (conversation.type === 'custom' && conversation.subject && conversation.subject.includes('Instagram Chat with')) {
                 contactName = conversation.subject.replace('Instagram Chat with ', '').trim();
-                contactHandle = `${conversation.id}@instagram.dm`;
-            } else {
+                // --- THIS IS THE CHANGE ---
+                // Use a safe, universally accepted example domain.
+                contactHandle = `${conversation.id}@instagram.example.com`;
+            } 
+            else {
                 throw new Error("No usable contact information found on this conversation.");
             }
 
             const dataToSend = {
                 email: contactHandle,
                 name: contactName,
-                frontLink: conversation.links.self,
-                // Add the new data
-                igHandle: igHandle,
-                notes: notes,
-                tags: tags 
+                frontLink: conversation.links.self
             };
-            
-            console.log('Final data being sent to Make:', dataToSend);
 
             const response = await fetch(MAKE_WEBHOOK_URL, {
                 method: 'POST',
@@ -53,7 +42,7 @@ window.onload = function() {
             if (!response.ok) {
                 throw new Error(`Network response was not ok: ${response.status}`);
             }
-            
+
             saveButton.textContent = 'Saved!';
             statusText.innerHTML = `✅ Successfully saved <strong>${contactName}</strong>.`;
 
