@@ -27,7 +27,7 @@ window.onload = function() {
                 contactHandle = contact.handle;
             } else if (conversation.type === 'custom' && conversation.subject && conversation.subject.includes('Instagram Chat with')) {
                 contactName = conversation.subject.replace('Instagram Chat with ', '').trim();
-                contactHandle = `${conversation.id}@example.com`;
+                contactHandle = `${conversation.id}@instagram.com`;
             } else {
                 throw new Error("No usable contact information found on this conversation.");
             }
