@@ -6,8 +6,6 @@ async function handleSaveToCrm() {
     const saveButton = document.getElementById('save-to-crm-btn');
     const statusText = document.getElementById('status-text');
 
-    // --- DEBUGGING STEP ---
-    // This will prove the function is running.
     console.log('Save button clicked!');
 
     try {
@@ -23,7 +21,6 @@ async function handleSaveToCrm() {
             frontLink: conversation.links.self
         };
 
-        // --- DEBUGGING STEP ---
         console.log('Sending data:', dataToSend);
 
         const response = await fetch(MAKE_WEBHOOK_URL, {
